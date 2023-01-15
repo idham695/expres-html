@@ -1,11 +1,18 @@
 const { PrismaClient } = require("@prisma/client");
+const jwt = require("jsonwebtoken");
 
 const prisma = new PrismaClient();
 
-
 let getAllList = async (req, res) => {
+    const authHeaders = req.headers["authorization"];
+    let token = authHeaders.split(" ")[1];
+    let tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
     try {
-        let list = await prisma.list.findMany();
+        let list = await prisma.list.findMany({
+            where: {
+                userId : parseInt(tokenBody.id)
+            }
+        });
         if (list) {
             res.status(200).json({
                 "message": "Data list",
@@ -22,9 +29,13 @@ let getAllList = async (req, res) => {
 let createList = async (req, res) => {
     try {
         let { title } = req.body;
-        let checkList = await prisma.list.findUnique({
+        const authHeaders = req.headers["authorization"];
+        const token = authHeaders.split(" ")[1];
+        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
+        let checkList = await prisma.list.findFirst({
             where: {
-                title : title
+                title: title,
+                userId : parseInt(tokenBody.id)
             }
         });
         if (checkList) {
@@ -40,7 +51,8 @@ let createList = async (req, res) => {
                 const list = await prisma.list.create({
                     data: {
                         title: title,
-                        published: false
+                        published: false,
+                        userId : tokenBody.id
                     }
                 });
                 res.status(200).json({
@@ -59,9 +71,13 @@ let createList = async (req, res) => {
 let getList = async (req, res) => {
     try {
         let { id } = req.params;
+        const authHeaders = req.headers["authorization"];
+        const token = authHeaders.split(" ")[1];
+        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         const list = await prisma.list.findFirst({
             where:{
-                id : parseInt(id)
+                id: parseInt(id),
+                userId : parseInt(tokenBody.id)
             }
         })
         if (list) {
@@ -85,19 +101,9 @@ let updateList = async (req, res) => {
     try {
         let { id } = req.params;
         let { title } = req.body;
-        // let checkList = await prisma.list.findFirst({
-        //     where: {
-        //         title : title
-        //     },
-        //     not : {
-        //         id : id
-        //     }
-        // });
-        // if (checkList) {
-        //     res.status(400).json({
-        //         "message": "Data is exist, please reinput with unique title"
-        //     });
-        // }
+        const authHeaders = req.headers["authorization"];
+        const token = authHeaders.split(" ")[1];
+        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         if (/[^a-zA-Z0-9\ \-_]/.test(title)) {
             res.status(400).json({
                 "message": "No special character in title"
@@ -105,7 +111,8 @@ let updateList = async (req, res) => {
         }else{
             const list = await prisma.list.update({
                 where: {
-                  id : parseInt(id)  
+                    id: parseInt(id),
+                    // userId : tokenBody.id
                 },
                 data: {
                     title: title
@@ -126,9 +133,12 @@ let updateList = async (req, res) => {
 let deleteList = async (req, res) => {
     try {
         let { id } = req.params;
+        const authHeaders = req.headers["authorization"];
+        const token = authHeaders.split(" ")[1];
+        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         const list = await prisma.list.delete({
             where: {
-                id : parseInt(id)
+                id: parseInt(id),
             }
         });
         if (list) {

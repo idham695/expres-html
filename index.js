@@ -1,6 +1,8 @@
+require('dotenv').config();
 const Express = require("express");
 const cors = require("cors");
 const listRoute = require('./route/list');
+const authRoute = require('./route/auth');
 
 
 
@@ -14,6 +16,7 @@ app.use(cors({
 const port = process.env.PORT || 3000;
 
 app.use('/list', listRoute);
+app.use('/auth', authRoute);
 
 
 app.listen(port, () => {
