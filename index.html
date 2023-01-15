@@ -12,35 +12,65 @@
   </head>
   <body>
     <div class="container">
-        <h1>List</h1>
-        <div align="right">
-            <button id="addData" class="btn btn-sm btn-primary mb-4" onclick="showForm('add')">Add Data</button>
+        <div class="form">
+            <h1 id="loginLabel">Login</h1>
+            <form>
+                <div class="form-group register" style="display: none;;">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" placeholder="Text">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" placeholder="Email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="Password">
+                </div>
+                <button type="button" onclick="submitAuth('login')" class="btn btn-primary login">Submit</button>
+                <button type="button" onclick="submitAuth('register')" class="btn btn-primary register" style="display: none;">Submit</button>
+                <div align="center" class="login">
+                    if you don't have a account, please click button register
+                    <button type="button" onclick="authButton('register')" class="btn btn-primary">Register</button>
+                </div>
+                <div align="center" class="register" style="display: none;">
+                    if you have a account, please click button login
+                    <button type="button" onclick="authButton('login')" class="btn btn-primary">Login</button>
+                </div>
+            </form>
         </div>
-        <form id="form" style="display: none;">
+        <div class="dashboard" style="display: none;">
+            <h1>List</h1>
             <div align="right">
-                <button id="return" class="btn btn-sm btn-primary mb-4" onclick="getData()">Back</button>
+                <button id="addData" class="btn btn-sm btn-primary mb-4" onclick="showForm('add')">Add Data</button>
+                <button id="logoutButton" type="button" onclick="logout()" class="btn btn-sm btn-danger mb-4">Logout</button>
             </div>
-            <input type="hidden" id="param">
-            <input type="hidden" id="id">
-            <div class="form-group">
-                <label for="title">Title</label>
-                <input type="text" class="form-control" id="title" placeholder="Title">
-            </div>
-            <button type="button"onclick="submitForm()" class="btn btn-primary">Submit</button>
-        </form>
-        <table class="table" id="dataTable">
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Title</th>
-                    <th scope="col">Created At</th>
-                    <th scope="col">Update At</th>
-                    <th scope="col">Action</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-            </tbody>
-        </table>
+            <form id="form" style="display: none;">
+                <div align="right">
+                    <button id="return" class="btn btn-sm btn-primary mb-4" onclick="getData()">Back</button>
+                </div>
+                <input type="hidden" id="param">
+                <input type="hidden" id="id">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" class="form-control" id="title" placeholder="Title">
+                </div>
+                <button type="button"onclick="submitForm()" class="btn btn-primary">Submit</button>
+            </form>
+            <table class="table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Created At</th>
+                        <th scope="col">Update At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Optional JavaScript -->
@@ -51,19 +81,90 @@
     <script>
         let baseurl = "http://localhost:3000/";
         $(document).ready(function(){
-            getData();
+            checkAuth();
         });
+        function checkAuth() {
+            let token = localStorage.getItem("token");
+            if (!token) {
+                $('.dashboard').hide();
+                $('.form').show();
+            } else {
+                $('.form').hide();
+                $('.dashboard').show();
+                getData();
+            }
+        }
+        function logout(){
+            localStorage.removeItem("token");
+            checkAuth();
+        }
+        function submitAuth(param){
+            let name = $('#name').val();
+            let email = $('#email').val();
+            let password = $('#password').val();
+            if(param == 'register'){
+                $.ajax({
+                    url: baseurl + 'auth/register',
+                    method: 'POST',
+                    data: {
+                        name: name,
+                        email: email,
+                        password:password
+                    },
+                    success(result) {
+                        alert(result.message);
+                    },
+                    error(err) {
+                        alert(err.responseJSON.message);
+                    }
+                });
+            }else {
+                $.ajax({
+                    url: baseurl + 'auth/login',
+                    method: 'POST',
+                    data: {
+                        email: email,
+                        password: password
+                    },
+                    success(result) {
+                        alert(result.message);
+                        localStorage.setItem("token", result.token);
+                        console.log("token " + result.token);
+                        checkAuth();
+                    },
+                    error(err) {
+                        alert(err.responseJSON.message);
+                    }
+                });
+            }
+        }
+        function authButton(param){
+            if (param == 'register') {
+                $('.login').hide();
+                $('.register').show();
+                $('#loginLabel').text('Register');
+            } else {
+                $('.register').hide();
+                $('.login').show();
+                $('#loginLabel').text('Login');
+            }
+        }
         function kosongtable() {
             $('#dataTable').show();
             $('#form').hide();
             $('#addData').show();
+            $('#logoutButton').show();
             $('#table-body > tr').remove();
         };
         function getData(){
             let data = '';
+            let token = localStorage.getItem("token");
             $.ajax({
                 url: baseurl + 'list',
                 method : 'GET',
+                headers: {
+                    Authorization: 'bearer ' + token
+                },
                 success(result){
                     kosongtable();
                     $.each(result.list, function(index, data){
@@ -85,6 +186,7 @@
             $('#dataTable').hide();
             $('#form').show();
             $('#addData').hide();
+            $('#logoutButton').hide();
             $('#param').val(param);
             if(param == 'edit'){
                 $('#title').val(data.title);
@@ -97,6 +199,7 @@
             $('#param').val('');
         }
         function submitForm(){
+            let token = localStorage.getItem("token");
             let title = $('#title').val();
             let id = $('#id').val();
             let param = $('#param').val();
@@ -109,6 +212,9 @@
                         method: 'POST',
                         data : {
                             title : title
+                        },
+                        headers: {
+                            Authorization: 'bearer ' + token
                         },
                         success(result) {
                             alert(result.message);
@@ -126,6 +232,9 @@
                         data: {
                             title: title
                         },
+                        headers: {
+                            Authorization: 'bearer ' + token
+                        },
                         success(result) {
                             alert(result.message);
                             getData();
@@ -139,9 +248,13 @@
             }
         }
         function editdata(id){
+            let token = localStorage.getItem("token");
             $.ajax({
                 url: baseurl + `list/${id}`,
                 method: 'GET',
+                headers: {
+                    Authorization: 'bearer ' + token
+                },
                 success(result) {
                     let list = result.list;
                     showForm('edit', list);
@@ -152,9 +265,13 @@
             });
         }
         function deletedata(id){
+            let token = localStorage.getItem("token");
             $.ajax({
                 url: baseurl + `list/${id}/delete`,
                 method: 'GET',
+                headers: {
+                    Authorization: 'bearer ' + token
+                },
                 success(result) {
                     alert(result.message);
                     getData();

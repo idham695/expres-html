@@ -16,25 +16,26 @@ const register = async (req, res) => {
             res.status(400).json({
                 "message": "User is exist, please input another email",
             });
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        if (!hashedPassword) {
-            res.status(400).json({
-                "message": "Register failed",
-            });
-        }
-        const user = await prisma.user.create({
-            data: {
-                name: name,
-                email: email,
-                password : hashedPassword
+        } else {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            if (!hashedPassword) {
+                res.status(400).json({
+                    "message": "Register failed",
+                });
             }
-        })
-        if (user) {
-            res.status(200).json({
-                "message": "Register successfully",
-                "user" : user
-            });
+            const user = await prisma.user.create({
+                data: {
+                    name: name,
+                    email: email,
+                    password : hashedPassword
+                }
+            })
+            if (user) {
+                res.status(200).json({
+                    "message": "Register successfully",
+                    "user" : user
+                });
+            }
         }
     } catch (error) {
         res.status(400).json({
@@ -55,27 +56,29 @@ const login = async (req, res) => {
             res.status(400).json({
                 "message": "User not found",
             });
+        } else {
+            const checkPassword = await bcrypt.compare(password, user.password);
+            if (!checkPassword) {
+                res.status(400).json({
+                    "message": "Password wrong",
+                });
+            } else {
+                const token = await jwt.sign({
+                    id: user.id,
+                    name: user.name,
+                    email: user.email
+                },
+                    process.env.TOKEN_SECRET,
+                {
+                    expiresIn : 86400,
+                }
+                );
+                res.status(200).json({
+                    "message": "Login Success",
+                    "token" : token
+                });
+            }
         }
-        const checkPassword = await bcrypt.compare(password, user.password);
-        if (!checkPassword) {
-            res.status(400).json({
-                "message": "Password wrong",
-            });
-        }
-        const token = await jwt.sign({
-            id: user.id,
-            name: user.name,
-            email: user.email
-        },
-            process.env.TOKEN_SECRET,
-        {
-            expiresIn : 86400,
-        }
-        );
-        res.status(200).json({
-            "message": "Login Success",
-            "token" : token
-        });
     } catch (error) {
         res.status(400).json({
             "message": "Login failed",
