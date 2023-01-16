@@ -47,36 +47,43 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         let { email, password } = req.body;
-        const user = await prisma.user.findUnique({
-            where: {
-                email: email
-            }
-        });
-        if (!user) {
+        const regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+        if (!regex.test(email)) {
             res.status(400).json({
-                "message": "User not found",
+                "message": "Email format is wrong, please add @ and domain",
             });
         } else {
-            const checkPassword = await bcrypt.compare(password, user.password);
-            if (!checkPassword) {
+            const user = await prisma.user.findUnique({
+                where: {
+                    email: email
+                }
+            });
+            if (!user) {
                 res.status(400).json({
-                    "message": "Password wrong",
+                    "message": "User not found",
                 });
             } else {
-                const token = await jwt.sign({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email
-                },
-                    process.env.TOKEN_SECRET,
-                {
-                    expiresIn : 86400,
+                const checkPassword = await bcrypt.compare(password, user.password);
+                if (!checkPassword) {
+                    res.status(400).json({
+                        "message": "Password wrong",
+                    });
+                } else {
+                    const token = await jwt.sign({
+                        id: user.id,
+                        name: user.name,
+                        email: user.email
+                    },
+                        process.env.TOKEN_SECRET,
+                    {
+                        expiresIn : 86400,
+                    }
+                    );
+                    res.status(200).json({
+                        "message": "Login Success",
+                        "token" : token
+                    });
                 }
-                );
-                res.status(200).json({
-                    "message": "Login Success",
-                    "token" : token
-                });
             }
         }
     } catch (error) {
