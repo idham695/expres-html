@@ -76,7 +76,7 @@ const login = async (req, res) => {
                     },
                         process.env.TOKEN_SECRET,
                     {
-                        expiresIn : 86400,
+                        expiresIn : 900, // 15 minutes
                     }
                     );
                     res.status(200).json({

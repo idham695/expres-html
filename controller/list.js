@@ -4,13 +4,10 @@ const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
 let getAllList = async (req, res) => {
-    const authHeaders = req.headers["authorization"];
-    let token = authHeaders.split(" ")[1];
-    let tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
     try {
         let list = await prisma.list.findMany({
             where: {
-                userId : parseInt(tokenBody.id)
+                userId : req.user.id
             }
         });
         if (list) {
@@ -29,13 +26,10 @@ let getAllList = async (req, res) => {
 let createList = async (req, res) => {
     try {
         let { title } = req.body;
-        const authHeaders = req.headers["authorization"];
-        const token = authHeaders.split(" ")[1];
-        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         let checkList = await prisma.list.findFirst({
             where: {
                 title: title,
-                userId : parseInt(tokenBody.id)
+                userId : req.user.id
             }
         });
         if (checkList) {
@@ -52,7 +46,7 @@ let createList = async (req, res) => {
                     data: {
                         title: title,
                         published: false,
-                        userId : tokenBody.id
+                        userId : req.user.id
                     }
                 });
                 res.status(200).json({
@@ -71,13 +65,10 @@ let createList = async (req, res) => {
 let getList = async (req, res) => {
     try {
         let { id } = req.params;
-        const authHeaders = req.headers["authorization"];
-        const token = authHeaders.split(" ")[1];
-        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         const list = await prisma.list.findFirst({
             where:{
                 id: parseInt(id),
-                userId : parseInt(tokenBody.id)
+                userId : req.user.id
             }
         })
         if (list) {
@@ -101,9 +92,6 @@ let updateList = async (req, res) => {
     try {
         let { id } = req.params;
         let { title } = req.body;
-        const authHeaders = req.headers["authorization"];
-        const token = authHeaders.split(" ")[1];
-        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         if (/[^a-zA-Z0-9\ \-_]/.test(title)) {
             res.status(400).json({
                 "message": "No special character in title"
@@ -133,9 +121,6 @@ let updateList = async (req, res) => {
 let deleteList = async (req, res) => {
     try {
         let { id } = req.params;
-        const authHeaders = req.headers["authorization"];
-        const token = authHeaders.split(" ")[1];
-        const tokenBody = await jwt.verify(token, process.env.TOKEN_SECRET);
         const list = await prisma.list.delete({
             where: {
                 id: parseInt(id),
