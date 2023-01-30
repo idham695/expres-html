@@ -15,10 +15,12 @@ let getAllList = async (req, res) => {
                 "message": "Data list",
                 "list" : list
             });
+        }else {
+            throw "Data list is not exist";
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Data list is not exist",
+            "message": error,
         });
     }
 }
@@ -33,14 +35,10 @@ let createList = async (req, res) => {
             }
         });
         if (checkList) {
-            res.status(400).json({
-                "message": "Data is exist, please reinput with unique title"
-            });
+            throw "Data is exist, please reinput with unique title"
         } else {
             if (/[^a-zA-Z0-9\ \-_]/.test(title)) {
-                res.status(400).json({
-                    "message": "No special character in title"
-                });
+                throw "No special character in title"
             } else {
                 const list = await prisma.list.create({
                     data: {
@@ -57,7 +55,7 @@ let createList = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Create data failed",
+            "message": error,
         });
     }
 }
@@ -77,13 +75,11 @@ let getList = async (req, res) => {
                 "list" : list
             });
         } else {
-            res.status(400).json({
-                "message": "Data list is not exist",
-            });
+           throw "Data list is not exist"
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Data list is not exist",
+            "message": error,
         });
     }
 }
@@ -93,9 +89,7 @@ let updateList = async (req, res) => {
         let { id } = req.params;
         let { title } = req.body;
         if (/[^a-zA-Z0-9\ \-_]/.test(title)) {
-            res.status(400).json({
-                "message": "No special character in title"
-            });
+            throw "No special character in title"
         }else{
             const list = await prisma.list.update({
                 where: {
@@ -106,14 +100,18 @@ let updateList = async (req, res) => {
                     title: title
                 }
             });
-            res.status(200).json({
-                "message": "Update data successfully",
-                "list" : list
-            });
+            if (!list) {
+                throw "Update data failed"
+            } else {
+                res.status(200).json({
+                    "message": "Update data successfully",
+                    "list" : list
+                });
+            }
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Update data failed"
+            "message": error
         });
     }
 }
@@ -130,10 +128,12 @@ let deleteList = async (req, res) => {
             res.status(200).json({
                 "message": "Delete data successfully",
             });
+        }else {
+            throw "Delete data failed"
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Delete data failed",
+            "message": error,
         });
     }
 }

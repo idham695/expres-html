@@ -13,15 +13,11 @@ const register = async (req, res) => {
             }
         });
         if (getUser) {
-            res.status(400).json({
-                "message": "User is exist, please input another email",
-            });
+            throw "User is exist, please input another email";
         } else {
             const hashedPassword = await bcrypt.hash(password, 10);
             if (!hashedPassword) {
-                res.status(400).json({
-                    "message": "Register failed",
-                });
+                throw "Register failed"
             }
             const user = await prisma.user.create({
                 data: {
@@ -35,11 +31,13 @@ const register = async (req, res) => {
                     "message": "Register successfully",
                     "user" : user
                 });
+            } else {
+                throw "Register failed"
             }
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Register failed",
+            "message": error,
         });
     }
 }
@@ -49,9 +47,7 @@ const login = async (req, res) => {
         let { email, password } = req.body;
         const regex = /^([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
         if (!regex.test(email)) {
-            res.status(400).json({
-                "message": "Email format is wrong, please add @ and domain",
-            });
+            throw "Email format is wrong, please add @ and domain"
         } else {
             const user = await prisma.user.findUnique({
                 where: {
@@ -59,15 +55,11 @@ const login = async (req, res) => {
                 }
             });
             if (!user) {
-                res.status(400).json({
-                    "message": "User not found",
-                });
+                throw "User not found"
             } else {
                 const checkPassword = await bcrypt.compare(password, user.password);
                 if (!checkPassword) {
-                    res.status(400).json({
-                        "message": "Password wrong",
-                    });
+                    throw "Password wrong"
                 } else {
                     const token = await jwt.sign({
                         id: user.id,
@@ -76,7 +68,7 @@ const login = async (req, res) => {
                     },
                         process.env.TOKEN_SECRET,
                     {
-                        expiresIn : 900, // 15 minutes
+                        expiresIn : 86400, // 1 days
                     }
                     );
                     res.status(200).json({
@@ -88,7 +80,7 @@ const login = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Login failed",
+            "message": error,
         });
     }
 }

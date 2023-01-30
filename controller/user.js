@@ -8,13 +8,9 @@ const changePassword = async (req, res) => {
         let { oldPassword, newPassword, retypePassword } = req.body;
         const checkOldPassword = await bcrypt.compare(oldPassword, req.user.password);
         if (!checkOldPassword) {
-            res.status(400).json({
-                "message": "Old password is wrong",
-            });
+            throw "Old password is wrong"
         } else if (newPassword !== retypePassword) {
-            res.status(400).json({
-                "message": "Retype password is not same as New password",
-            });
+            throw "Retype password is not same as New password"
         } else {
             const hashedPassword = await bcrypt.hash(newPassword, 10);
             const updatePassword = await prisma.user.update({
@@ -26,9 +22,7 @@ const changePassword = async (req, res) => {
                 }
             });
             if (!updatePassword) {
-                res.status(400).json({
-                    "message": "Update password failed",
-                });
+                throw "Update password failed";
             } else {
                 res.status(200).json({
                     "message": "Update password successfully",
@@ -37,7 +31,7 @@ const changePassword = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Update password failed",
+            "message": error,
         });
     }
 }
@@ -55,10 +49,12 @@ const getProfile = async (req, res) => {
                 "message": "Data user",
                 "user" : getUser
             });
+         } else {
+             throw "User is not exist"
         }
     } catch (error) {
         res.status(400).json({
-            "message": "User is not exist",
+            "message": error,
         });
     }
 }
@@ -77,9 +73,7 @@ const changeProfile = async (req, res) => {
             }
         });
         if (!updateProfile) {
-            res.status(400).json({
-                "message": "Update profile failed",
-            });
+            throw "Update profile failed"
         } else {
             res.status(200).json({
                 "message": "Update profile successfully",
@@ -87,7 +81,7 @@ const changeProfile = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Update profile failed",
+            "message": error,
         });
     }
 }
@@ -96,11 +90,6 @@ const changeProfile = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         let user = req.user;
-        const getUser = await prisma.user.delete({
-            where: {
-                id : user.id
-            }
-        });
         const list = await prisma.list.findMany({
             where: {
                 userId : user.id
@@ -113,10 +102,13 @@ const deleteUser = async (req, res) => {
                 }
             });
         }
+        const getUser = await prisma.user.delete({
+            where: {
+                id : user.id
+            }
+        });
         if (!getUser) {
-            res.status(400).json({
-                "message": "Delete user failed",
-            });
+            throw "Delete user failed"
         } else {
             res.status(200).json({
                 "message": "Delete user successfully",
@@ -124,7 +116,7 @@ const deleteUser = async (req, res) => {
         }
     } catch (error) {
         res.status(400).json({
-            "message": "Delete user failed",
+            "message": error,
         });
     }
 }

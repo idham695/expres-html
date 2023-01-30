@@ -4,27 +4,27 @@ const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
 const isAuthenticated = async (req, res, next) => {
+    if (!req.headers["authorization"]) {
+        return res.status(400).json({
+        success: false,
+        error: "missing authorization headers provided.",
+        });
+    }
+
+    const authHeaders = req.headers["authorization"];
+    const authMethod = authHeaders.split(" ")[0];
+    const accessToken = authHeaders.split(" ")[1];
+
+    if (!authMethod || !accessToken) {
+        return res
+        .status(400)
+        .json({ success: false, msg: "invalid auth headers" });
+    } else if (authMethod !== "bearer") {
+        return res
+        .status(400)
+        .json({ success: false, msg: "invalid bearer method" });
+    }
     try {
-        if (!req.headers["authorization"]) {
-            res.status(400).json({
-                "message": "Missing authorization headers",
-            });
-        }
-
-
-        const authHeaders = req.headers["authorization"];
-        const authMethod = authHeaders.split(" ")[0];
-        const accessToken = authHeaders.split(" ")[1];
-
-        if (!authMethod || !accessToken) {
-            res.status(400).json({
-                "message": "Invalid auth headers",
-            });
-        } else if (authMethod !== "bearer") {
-            res.status(400).json({
-                "message": "Invalid bearer method",
-            });
-        }
 
         let tokenBody = await jwt.verify(accessToken, process.env.TOKEN_SECRET);
         let user = await prisma.user.findUnique({
@@ -33,14 +33,12 @@ const isAuthenticated = async (req, res, next) => {
             }
         });
         if (!user) {
-            res.status(400).json({
-                "message": "User not found",
-            });
+            throw "User not found"
         }
         req.user = user;
     } catch (error) {
          res.status(400).json({
-            "message": "Invalid access token",
+            "message": error,
         });
     }
 

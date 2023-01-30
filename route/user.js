@@ -7,7 +7,7 @@ let route = router();
 route.post('/changePassword', isAuthenticated, userController.changePassword);
 route.get('/getProfile', isAuthenticated, userController.getProfile);
 route.post('/changeProfile', isAuthenticated, userController.changeProfile);
-route.get('/deleteUser', isAuthenticated, userController.deleteUser)
+route.post('/deleteUser', isAuthenticated, userController.deleteUser)
 
 
 module.exports = route
